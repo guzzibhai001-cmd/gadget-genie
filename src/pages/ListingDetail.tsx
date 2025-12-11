@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { sampleListings } from "@/data/listings";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Star, 
   MapPin, 
@@ -19,19 +21,99 @@ import {
   Share2,
   MessageCircle,
   CheckCircle2,
-  Info
+  Info,
+  Loader2
 } from "lucide-react";
 import { format, addDays, differenceInDays } from "date-fns";
 import { toast } from "sonner";
 
+interface DBListing {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  brand: string;
+  model: string;
+  daily_rate: number;
+  weekly_rate: number;
+  deposit_amount: number;
+  location: string;
+  city: string;
+  images: string[];
+  specifications: Record<string, string>;
+  is_available: boolean;
+  owner_id: string;
+}
+
 const ListingDetail = () => {
   const { id } = useParams();
-  const listing = sampleListings.find((l) => l.id === id);
+  const navigate = useNavigate();
+  const { user } = useAuth();
   
+  const [dbListing, setDbListing] = useState<DBListing | null>(null);
+  const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isBooking, setIsBooking] = useState(false);
+
+  // Try to find from sample listings first (for demo)
+  const sampleListing = sampleListings.find((l) => l.id === id);
+
+  useEffect(() => {
+    const fetchListing = async () => {
+      if (!id) return;
+      
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setDbListing(data as DBListing);
+      }
+      setLoading(false);
+    };
+
+    fetchListing();
+  }, [id]);
+
+  // Use DB listing if found, otherwise use sample listing
+  const listing = dbListing ? {
+    id: dbListing.id,
+    title: dbListing.title,
+    description: dbListing.description || "",
+    category: dbListing.category,
+    pricePerDay: Number(dbListing.daily_rate),
+    depositAmount: Number(dbListing.deposit_amount),
+    images: dbListing.images?.length ? dbListing.images : ["/placeholder.svg"],
+    location: { area: dbListing.location, city: dbListing.city },
+    specs: dbListing.specifications || {},
+    available: dbListing.is_available,
+    rating: 4.8,
+    reviewCount: 0,
+    owner: {
+      name: "Owner",
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100",
+      verified: true,
+      rating: 4.9,
+      reviewCount: 0,
+    },
+  } : sampleListing;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 pb-16 flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!listing) {
     return (
@@ -63,14 +145,48 @@ const ListingDetail = () => {
     setCurrentImageIndex((prev) => (prev - 1 + listing.images.length) % listing.images.length);
   };
 
-  const handleBooking = () => {
+  const handleBooking = async () => {
     if (!startDate || !endDate) {
       toast.error("Please select rental dates");
       return;
     }
-    toast.success("Redirecting to checkout...", {
-      description: `Booking ${listing.title} for ${rentalDays} days`,
+
+    if (!user) {
+      toast.error("Please login to book");
+      navigate("/login");
+      return;
+    }
+
+    if (!dbListing) {
+      toast.info("Demo listing - booking simulation", {
+        description: `Would book ${listing.title} for ${rentalDays} days`,
+      });
+      return;
+    }
+
+    setIsBooking(true);
+
+    const { error } = await supabase.from("bookings").insert({
+      listing_id: dbListing.id,
+      renter_id: user.id,
+      owner_id: dbListing.owner_id,
+      start_date: format(startDate, "yyyy-MM-dd"),
+      end_date: format(endDate, "yyyy-MM-dd"),
+      total_amount: totalPrice,
+      deposit_amount: listing.depositAmount,
+      service_fee: serviceFee,
     });
+
+    if (error) {
+      toast.error("Failed to create booking: " + error.message);
+      setIsBooking(false);
+      return;
+    }
+
+    toast.success("Booking created successfully!", {
+      description: `Booked ${listing.title} for ${rentalDays} days`,
+    });
+    navigate("/dashboard");
   };
 
   return (
@@ -175,21 +291,23 @@ const ListingDetail = () => {
               </div>
 
               {/* Specifications */}
-              <div>
-                <h2 className="text-h4 font-semibold mb-4">Specifications</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {Object.entries(listing.specs).map(([key, value]) => (
-                    <div key={key} className="flex items-center gap-3 p-3 rounded-lg bg-accent/50">
-                      <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                      <div>
-                        <span className="text-sm text-muted-foreground">{key}</span>
-                        <span className="mx-2 text-muted-foreground">·</span>
-                        <span className="text-sm font-medium">{value}</span>
+              {Object.keys(listing.specs).length > 0 && (
+                <div>
+                  <h2 className="text-h4 font-semibold mb-4">Specifications</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {Object.entries(listing.specs).map(([key, value]) => (
+                      <div key={key} className="flex items-center gap-3 p-3 rounded-lg bg-accent/50">
+                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                        <div>
+                          <span className="text-sm text-muted-foreground">{key}</span>
+                          <span className="mx-2 text-muted-foreground">·</span>
+                          <span className="text-sm font-medium">{value}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Owner Card */}
               <Card variant="elevated" className="p-6">
@@ -316,10 +434,15 @@ const ListingDetail = () => {
                   variant="hero" 
                   size="lg" 
                   className="w-full"
-                  disabled={!listing.available}
+                  disabled={!listing.available || isBooking}
                   onClick={handleBooking}
                 >
-                  {listing.available ? "Book Now" : "Not Available"}
+                  {isBooking ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Booking...
+                    </>
+                  ) : listing.available ? "Book Now" : "Not Available"}
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground mt-3">
