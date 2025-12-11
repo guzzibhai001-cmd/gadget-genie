@@ -6,8 +6,7 @@ const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden gradient-hero pt-16">
       {/* Background Effects */}
-      <div className="absolute inset-0 bg-radial-glow opacity-50" />
-      <div className="absolute inset-0 bg-grid-pattern bg-[size:60px_60px] opacity-5" />
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
       
       {/* Floating Orbs */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" />
@@ -68,22 +67,23 @@ const HeroSection = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 max-w-4xl mx-auto">
-          {[
-            { value: "5,000+", label: "Active Listings" },
-            { value: "15,000+", label: "Happy Renters" },
-            { value: "₹2Cr+", label: "Owner Earnings" },
-            { value: "50+", label: "Cities" },
-          ].map((stat, index) => (
-            <div 
-              key={stat.label} 
-              className="text-center p-6 rounded-2xl glass animate-slide-up"
-              style={{ animationDelay: `${0.4 + index * 0.1}s` }}
-            >
-              <div className="text-2xl sm:text-3xl font-bold text-gradient-primary">{stat.value}</div>
-              <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 max-w-4xl mx-auto px-4">
+          <div className="text-center px-6 py-5 rounded-xl bg-muted/40 border border-muted-foreground/20">
+            <div className="text-2xl sm:text-3xl font-bold text-gradient-primary">5,000+</div>
+            <div className="text-sm text-muted-foreground mt-1">Active Listings</div>
+          </div>
+          <div className="text-center px-6 py-5 rounded-xl bg-muted/40 border border-muted-foreground/20">
+            <div className="text-2xl sm:text-3xl font-bold text-gradient-primary">15,000+</div>
+            <div className="text-sm text-muted-foreground mt-1">Happy Renters</div>
+          </div>
+          <div className="text-center px-6 py-5 rounded-xl bg-muted/40 border border-muted-foreground/20">
+            <div className="text-2xl sm:text-3xl font-bold text-gradient-primary">₹2Cr+</div>
+            <div className="text-sm text-muted-foreground mt-1">Owner Earnings</div>
+          </div>
+          <div className="text-center px-6 py-5 rounded-xl bg-muted/40 border border-muted-foreground/20">
+            <div className="text-2xl sm:text-3xl font-bold text-gradient-primary">50+</div>
+            <div className="text-sm text-muted-foreground mt-1">Cities</div>
+          </div>
         </div>
       </div>
     </section>
