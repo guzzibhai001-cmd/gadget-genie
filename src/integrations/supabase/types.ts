@@ -14,16 +14,209 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          created_at: string | null
+          deposit_amount: number
+          end_date: string
+          id: string
+          listing_id: string
+          owner_id: string
+          payment_id: string | null
+          payment_status: string | null
+          renter_id: string
+          service_fee: number | null
+          start_date: string
+          status: string | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deposit_amount: number
+          end_date: string
+          id?: string
+          listing_id: string
+          owner_id: string
+          payment_id?: string | null
+          payment_status?: string | null
+          renter_id: string
+          service_fee?: number | null
+          start_date: string
+          status?: string | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deposit_amount?: number
+          end_date?: string
+          id?: string
+          listing_id?: string
+          owner_id?: string
+          payment_id?: string | null
+          payment_status?: string | null
+          renter_id?: string
+          service_fee?: number | null
+          start_date?: string
+          status?: string | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listings: {
+        Row: {
+          brand: string | null
+          category: string
+          city: string
+          condition: string | null
+          created_at: string | null
+          daily_rate: number
+          deposit_amount: number
+          description: string | null
+          id: string
+          images: string[] | null
+          is_approved: boolean | null
+          is_available: boolean | null
+          location: string
+          model: string | null
+          monthly_rate: number | null
+          owner_id: string
+          specifications: Json | null
+          title: string
+          updated_at: string | null
+          weekly_rate: number | null
+        }
+        Insert: {
+          brand?: string | null
+          category: string
+          city: string
+          condition?: string | null
+          created_at?: string | null
+          daily_rate: number
+          deposit_amount: number
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_approved?: boolean | null
+          is_available?: boolean | null
+          location: string
+          model?: string | null
+          monthly_rate?: number | null
+          owner_id: string
+          specifications?: Json | null
+          title: string
+          updated_at?: string | null
+          weekly_rate?: number | null
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          city?: string
+          condition?: string | null
+          created_at?: string | null
+          daily_rate?: number
+          deposit_amount?: number
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_approved?: boolean | null
+          is_available?: boolean | null
+          location?: string
+          model?: string | null
+          monthly_rate?: number | null
+          owner_id?: string
+          specifications?: Json | null
+          title?: string
+          updated_at?: string | null
+          weekly_rate?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          city: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          is_verified: boolean | null
+          kyc_document_url: string | null
+          phone: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          is_verified?: boolean | null
+          kyc_document_url?: string | null
+          phone?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          is_verified?: boolean | null
+          kyc_document_url?: string | null
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +343,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
